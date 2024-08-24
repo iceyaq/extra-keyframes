@@ -1,0 +1,134 @@
+-- Load the Elysian UI library
+local success, Elysian = pcall(function()
+    return loadstring(game:HttpGet("https://raw.githubusercontent.com/SomeUser/ElysianUI/main/source.lua"))()
+end)
+
+if not success or not Elysian then
+    warn("Elysian UI failed to load.")
+    return
+end
+
+-- Create the main GUI window
+local Main = Elysian:CreateWindow("Sword Fight Bot")
+
+-- Add a tab for sword fighting features
+local SwordTab = Main:AddTab("Sword Fighting")
+
+-- Add toggles for various features
+local AutoAttackToggle = SwordTab:AddToggle("Auto Attack", function(enabled)
+    getgenv().AutoAttack = enabled
+end)
+
+local VisualFeaturesToggle = SwordTab:AddToggle("Visual Features", function(enabled)
+    getgenv().VisualFeatures = enabled
+end)
+
+local HealthTrackingToggle = SwordTab:AddToggle("Track Health", function(enabled)
+    getgenv().TrackHealth = enabled
+end)
+
+-- Add a RunService reference
+local RunService = game:GetService("RunService")
+
+-- Function to display notifications
+local function ShowNotification(message)
+    local player = game.Players.LocalPlayer
+    if player and player.PlayerGui then
+        -- Create a new ScreenGui
+        local notificationGui = Instance.new("ScreenGui", player.PlayerGui)
+        notificationGui.Name = "NotificationGui"
+        
+        -- Create a new TextLabel
+        local textLabel = Instance.new("TextLabel", notificationGui)
+        textLabel.Text = message
+        textLabel.Size = UDim2.new(0, 300, 0, 50)
+        textLabel.Position = UDim2.new(0.5, -150, 0.1, 0)
+        textLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        textLabel.TextScaled = true
+        textLabel.TextWrapped = true
+        textLabel.TextStrokeTransparency = 0.5
+        textLabel.BorderSizePixel = 0
+        
+        -- Remove the notification after a delay
+        wait(5)
+        notificationGui:Destroy()
+    end
+end
+
+-- Function to handle sword fighting and visual logic
+local function HandleSwordFight()
+    -- Connect to Heartbeat for general updates
+    RunService.Heartbeat:Connect(function()
+        if getgenv().AutoAttack then
+            local character = game.Players.LocalPlayer.Character
+            if character then
+                local sword = character:FindFirstChildOfClass("Tool")  -- Find the equipped sword
+                if sword and sword:IsA("Tool") then
+                    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+                    if humanoidRootPart then
+                        local enemies = {}
+
+                        -- Iterate over all players and collect enemy players
+                        for _, v in ipairs(game.Players:GetPlayers()) do
+                            if v ~= game.Players.LocalPlayer and v.Character and v.Character:FindFirstChildOfClass("Humanoid") then
+                                table.insert(enemies, v.Character)
+                            end
+                        end
+
+                        -- Attack enemies within range
+                        for _, u in ipairs(enemies) do
+                            local enemyHRP = u:FindFirstChild("HumanoidRootPart")
+                            if enemyHRP and (humanoidRootPart.Position - enemyHRP.Position).magnitude < 10 then
+                                -- Simulate sword attack
+                                sword:Activate()
+                                break
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end)
+
+    -- Connect to RenderStepped for visual updates
+    RunService.RenderStepped:Connect(function()
+        if getgenv().VisualFeatures then
+            local character = game.Players.LocalPlayer.Character
+            if character then
+                local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+                if humanoidRootPart then
+                    -- Example: Highlight the character
+                    local highlight = Instance.new("Highlight", character)
+                    highlight.Adornee = humanoidRootPart
+                    highlight.FillColor = Color3.fromRGB(255, 0, 0)
+                    highlight.FillTransparency = 0.5
+                end
+            end
+        end
+
+        -- Show notification with Discord info
+        ShowNotification("Discord: rux0_0")
+    end)
+
+    -- Connect to Stepped for physics updates
+    RunService.Stepped:Connect(function(_, dt)
+        if getgenv().TrackHealth then
+            local character = game.Players.LocalPlayer.Character
+            if character and character:FindFirstChildOfClass("Humanoid") then
+                local humanoid = character:FindFirstChildOfClass("Humanoid")
+                if humanoid then
+                    local health = humanoid.Health
+                    ShowNotification("Health: " .. tostring(health))
+                end
+            end
+        end
+    end)
+end
+
+-- Start the sword fight logic
+xpcall(function()
+    HandleSwordFight()
+end, function(err)
+    warn("An error occurred: ", err)
+end)
